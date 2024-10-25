@@ -1,8 +1,8 @@
 import streamlit as st
+import os
 import pandas as pd
 import numpy as np
 import altair as alt
-import os
 import time
 from datetime import datetime
 import pickle
@@ -11,37 +11,24 @@ import plotly.express as px
 from plot_setup import finastra_theme
 from download_data import Data
 import sys
-
 import metadata_parser
+
+###### SET UP PAGE ######
+# Set the page configuration at the very start
+icon_path = os.path.join(".", "raw", "esg_ai_logo.png")
+st.set_page_config(page_title="ESG AI", page_icon=icon_path,
+                   layout='centered', initial_sidebar_state="collapsed")
 
 ####### CACHED FUNCTIONS ######
 @st.cache(show_spinner=False, suppress_st_warning=True)
 def filter_company_data(df_company, esg_categories, start, end):
-    #Filter E,S,G Categories
+    # Filter E, S, G Categories
     comps = []
     for i in esg_categories:
         X = df_company[df_company[i] == True]
         comps.append(X)
     df_company = pd.concat(comps)
-    # df_company = df_company[(df_company.DATE >= start) &
-    #                         (df_company.DATE <= end)]
     df_company = df_company[df_company.DATE.between(start, end)]
-    return df_company
-
-
-@st.cache(show_spinner=False, suppress_st_warning=True,
-          allow_output_mutation=True)
-def load_data(start_data, end_data):
-    data = Data().read(start_data, end_data)
-    companies = data["data"].Organization.sort_values().unique().tolist()
-    companies.insert(0,"Select a Company")
-    return data, companies
-
-
-@st.cache(show_spinner=False,suppress_st_warning=True)
-def filter_publisher(df_company,publisher):
-    if publisher != 'all':
-        df_company = df_company[df_company['SourceCommonName'] == publisher]
     return df_company
 
 
@@ -81,10 +68,7 @@ def main(start_data, end_data):
 
 
     ###### SET UP PAGE ######
-    icon_path = os.path.join(".", "raw", "esg_ai_logo.png")
-    st.set_page_config(page_title="ESG AI", page_icon=icon_path,
-                       layout='centered', initial_sidebar_state="collapsed")
-    _, logo, _ = st.beta_columns(3)
+    _, logo, _ = st.columns(3)
     logo.image(icon_path, width=200)
     style = ("text-align:center; padding: 0px; font-family: arial black;, "
              "font-size: 400%")
@@ -153,7 +137,7 @@ def main(start_data, end_data):
 
 
         ###### DISPLAY DATA ######
-        URL_Expander = st.beta_expander(f"View {company.title()} Data:", True)
+        URL_Expander = st.expander(f"View {company.title()} Data:", True)
         URL_Expander.write(f"### {len(df_company):,d} Matching Articles for " +
                            company.title())
         display_cols = ["DATE", "SourceCommonName", "Tone", "Polarity",
@@ -172,7 +156,7 @@ def main(start_data, end_data):
 
         ###### CHART: METRIC OVER TIME ######
         st.markdown("---")
-        col1, col2 = st.beta_columns((1, 3))
+        col1, col2 = st.columns((1, 3))
 
         metric_options = ["Tone", "NegativeTone", "PositiveTone", "Polarity",
                           "ActivityDensity", "WordCount", "Overall Score",
@@ -235,7 +219,7 @@ def main(start_data, end_data):
 
 
         ###### CHART: ESG RADAR ######
-        col1, col2 = st.beta_columns((1, 2))
+        col1, col2 = st.columns((1, 2))
         avg_esg = data["ESG"]
         avg_esg.rename(columns={"Unnamed: 0": "Type"}, inplace=True)
         avg_esg.replace({"T": "Overall", "E": "Environment",

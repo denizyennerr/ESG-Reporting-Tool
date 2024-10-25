@@ -1,10 +1,9 @@
+import streamlit as st
+import os
 import pandas as pd
 import numpy as np
-import os
-
 
 class Data:
-
     def paths(self, data_path):
         # Paths to data files
         self.connections = os.path.join(data_path, "connections.csv")
@@ -15,9 +14,7 @@ class Data:
         self.daily_esg = os.path.join(esg_path, "overall_daily_esg_scores.csv")
         self.e_score = os.path.join(esg_path, "daily_E_score.csv")
         self.s_score = os.path.join(esg_path, "daily_S_score.csv")
-        self.g_score =os.path.join(esg_path, "daily_S_score.csv")
-
-
+        self.g_score = os.path.join(esg_path, "daily_G_score.csv")  # Fixed to G_score
 
     def read(self, start_day="jan6", end_day="jan12"):
         dir_name = f"{start_day}_to_{end_day}"
@@ -27,28 +24,41 @@ class Data:
 
         data_path = os.path.join(".", "Data", dir_name)
         self.paths(data_path)
-        data = {"conn": pd.read_csv(self.connections),
-                "data": pd.read_csv(self.data, parse_dates=["DATE"],
-                                 infer_datetime_format=True),
-                "embed": pd.read_csv(self.embeddings),
-                "overall_score": pd.read_csv(self.daily_esg,
-                                  index_col="date", parse_dates=["date"],
-                                 infer_datetime_format=True),
-                "E_score": pd.read_csv(self.e_score, parse_dates=["date"],
-                                 infer_datetime_format=True, index_col="date"),
-                "S_score": pd.read_csv(self.s_score, parse_dates=["date"],
-                                 infer_datetime_format=True, index_col="date"),
-                "G_score": pd.read_csv(self.g_score, parse_dates=["date"],
-                                 infer_datetime_format=True, index_col="date"),
-                "ESG": pd.read_csv(self.avg_esg),
-                }
-        # Dat column to date (not timestamp)
+        data = {
+            "conn": pd.read_csv(self.connections),
+            "data": pd.read_csv(self.data, parse_dates=["DATE"], infer_datetime_format=True),
+            "embed": pd.read_csv(self.embeddings),
+            "overall_score": pd.read_csv(self.daily_esg, index_col="date", parse_dates=["date"], infer_datetime_format=True),
+            "E_score": pd.read_csv(self.e_score, parse_dates=["date"], infer_datetime_format=True, index_col="date"),
+            "S_score": pd.read_csv(self.s_score, parse_dates=["date"], infer_datetime_format=True, index_col="date"),
+            "G_score": pd.read_csv(self.g_score, parse_dates=["date"], infer_datetime_format=True, index_col="date"),
+            "ESG": pd.read_csv(self.avg_esg),
+        }
+        # Convert the 'DATE' column to date (not timestamp)
         data["data"]["DATE"] = data["data"]["DATE"].dt.date
 
-        # Multiply tones by large number
+        # Multiply tones by a large number
         esg_tables = ["E_score", "S_score", "G_score", "overall_score", "ESG"]
         for t in esg_tables:
             num_cols = data[t].select_dtypes(include=["number"]).columns
             data[t][num_cols] *= 10000
 
         return data
+
+# In your Streamlit app
+if __name__ == "__main__":
+    st.title("Data Loading Example")
+
+    # Instantiate Data class
+    data_loader = Data()
+
+    # Load data
+    try:
+        data = data_loader.read(start_day="jan6", end_day="jan12")
+        st.success("Data loaded successfully!")
+    except NameError as e:
+        st.error(str(e))
+
+    # Display some data
+    if 'data' in locals():
+        st.write(data["data"].head())  # Display first few rows of the main data
